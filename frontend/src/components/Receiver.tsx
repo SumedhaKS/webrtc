@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 export default function Receiver() {
     const [socket, setSocket] = useState<WebSocket | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
     // const [pc, setPC] = useState<RTCPeerConnection | null>(null);
 
     useEffect(() => {
@@ -27,8 +29,11 @@ export default function Receiver() {
                     }
                 }
 
-                pc.ontrack = (track)=>{
-                    console.log(track);
+                pc.ontrack = (event) => {
+                    console.log(event.track);
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = new MediaStream([event.track]);
+                    }
                 }
 
                 const answer = await pc.createAnswer();
@@ -45,10 +50,14 @@ export default function Receiver() {
         }
 
     }, [])
+    
+    // Issue here - The receiver doesn't see the sender's video unless the sender clicks send video twice.
+    //              And Sometimes the video is not rendered at all 
 
     return (
         <div>
             Receiver
+            <video ref={videoRef} controls={true}></video>
         </div>
     )
 }

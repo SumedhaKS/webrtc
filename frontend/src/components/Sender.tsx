@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 export default function Sender() {
     const [socket, setSocket] = useState<WebSocket | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
         const socket: WebSocket = new WebSocket("ws://localhost:8080");
@@ -20,7 +21,7 @@ export default function Sender() {
 
         pc.onnegotiationneeded = async () => {
             console.log("on negotiaion needed trigerred");
-            
+
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
             socket?.send(JSON.stringify({ type: "create-offer", sdp: pc.localDescription }))
@@ -34,7 +35,7 @@ export default function Sender() {
         }
 
         socket.onmessage = async (event) => {
-             const data = JSON.parse(event.data);
+            const data = JSON.parse(event.data);
             if (data.type === "create-answer") {
                 await pc.setRemoteDescription(data.sdp);
                 console.log("RD set");
@@ -45,7 +46,10 @@ export default function Sender() {
             }
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({video: true, audio: false})
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+        }
         pc.addTrack(stream.getVideoTracks()[0]);
     }
 
@@ -54,6 +58,7 @@ export default function Sender() {
             Sender
 
             <button onClick={startSendingVideo}>Send Video</button>
+            {/* <video ref={videoRef} autoPlay={true}></video> */}
         </div>
     )
 }
